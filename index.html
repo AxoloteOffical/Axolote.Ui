@@ -1,2 +1,756 @@
-# Axolote.Ui
-Axolote
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Online Game Centre - Sistema Avançado</title>
+    <style>
+        /* Variáveis de cores e fontes */
+        :root {
+            --cor-primaria: #4a90e2;
+            --cor-secundaria: #ffffff;
+            --cor-fundo: #f4f4f4;
+            --cor-texto: #333;
+            --modal-bg: rgba(0, 0, 0, 0.7);
+        }
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: var(--cor-fundo);
+            color: var(--cor-texto);
+        }
+        /* Modal de Login / Cadastro */
+        .modal {
+            display: flex;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--modal-bg);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: var(--cor-secundaria);
+            padding: 2rem;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+        .modal-content input,
+        .modal-content button,
+        .modal-content select {
+            width: 100%;
+            padding: 0.8rem;
+            margin: 0.5rem 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        .hidden { display: none; }
+        /* Header e Navegação */
+        header {
+            background: var(--cor-primaria);
+            color: var(--cor-secundaria);
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        header h1 { margin: 0; font-size: 1.5rem; }
+        nav ul {
+            list-style: none;
+            display: flex;
+            gap: 1rem;
+            margin: 0;
+            padding: 0;
+        }
+        nav ul li a {
+            color: var(--cor-secundaria);
+            text-decoration: none;
+            font-weight: bold;
+            transition: opacity 0.3s;
+        }
+        nav ul li a:hover { opacity: 0.8; }
+        /* Main Content */
+        main { padding: 1rem; }
+        section { margin-bottom: 2rem; }
+        /* Grid de Jogos */
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        .game-card {
+            background: var(--cor-secundaria);
+            border-radius: 8px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.1);
+            padding: 1rem;
+            text-align: center;
+            transition: transform 0.2s;
+            cursor: pointer;
+            position: relative;
+        }
+        .game-card:hover { transform: scale(1.02); }
+        .game-card img { width: 100%; height: auto; border-radius: 4px; }
+        .edit-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #ff9900;
+            color: #fff;
+            border: none;
+            border-radius: 3px;
+            padding: 3px 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            z-index: 2;
+        }
+        /* Campo de busca na galeria */
+        #search-bar {
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            font-size: 1rem;
+            width: 100%;
+            max-width: 400px;
+        }
+        /* Editor de Código e Preview */
+        .editor-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .editor-tabs {
+            grid-column: 1 / -1;
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .editor-tabs button {
+            flex: 1;
+            padding: 0.5rem;
+            border: none;
+            background: var(--cor-primaria);
+            color: var(--cor-secundaria);
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .editor-panels { grid-column: 1 / -1; display: flex; flex-direction: column; }
+        .editor {
+            width: 100%;
+            height: 150px;
+            font-family: monospace;
+            font-size: 0.9rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            padding: 0.5rem;
+            resize: vertical;
+        }
+        .preview-container, .debug-console {
+            background: var(--cor-secundaria);
+            border-radius: 8px;
+            padding: 1rem;
+            box-shadow: 0 0 5px rgba(0,0,0,0.1);
+            height: 300px;
+            overflow: auto;
+        }
+        .preview-container iframe { width: 100%; height: 100%; border: none; }
+        /* Formulário de Informações do Jogo */
+        .game-info-form {
+            background: var(--cor-secundaria);
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 0 5px rgba(0,0,0,0.1);
+            max-width: 500px;
+            margin: auto;
+        }
+        /* Seções extras na Home */
+        .extra-info { margin-top: 2rem; }
+        .extra-info > div {
+            margin-bottom: 1rem;
+            background: #fff;
+            padding: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        /* Footer */
+        footer {
+            background: var(--cor-primaria);
+            color: var(--cor-secundaria);
+            text-align: center;
+            padding: 1rem;
+            font-size: 0.9rem;
+        }
+        /* Responsividade */
+        @media(max-width: 768px) {
+            .editor-container { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+<!-- Modal de Login / Cadastro -->
+<div id="login-modal" class="modal">
+    <div class="modal-content">
+        <!-- Login -->
+        <div id="login-container">
+            <h2>Entrar na Conta</h2>
+            <form id="login-form">
+                <input type="text" id="login-username" placeholder="Usuário" required>
+                <input type="password" id="login-password" placeholder="Senha" required>
+                <label>
+                    <input type="checkbox" id="remember-me"> Lembrar-me
+                </label>
+                <button type="submit">Entrar</button>
+            </form>
+            <p>Não tem conta? <button id="show-signup-btn" type="button">Criar Nova Conta</button></p>
+            <button id="guest-btn-login">Continuar como Visitante</button>
+        </div>
+        <!-- Cadastro -->
+        <div id="signup-container" class="hidden">
+            <h2>Criar Nova Conta</h2>
+            <form id="signup-form">
+                <input type="text" id="signup-username" placeholder="Escolha um Usuário" required>
+                <input type="password" id="signup-password" placeholder="Senha" required>
+                <input type="password" id="signup-password2" placeholder="Confirmar Senha" required>
+                <button type="submit">Cadastrar</button>
+            </form>
+            <p>Já possui uma conta? <button id="show-login-btn" type="button">Entrar</button></p>
+        </div>
+    </div>
+</div>
+
+<!-- Header -->
+<header>
+    <h1>Online Game Centre</h1>
+    <nav>
+        <ul>
+            <li><a href="#" id="home-link">Início</a></li>
+            <li><a href="#" id="gallery-link">Galeria</a></li>
+            <li><a href="#" id="create-link" style="display: none;">Criar</a></li>
+            <li><a href="#" id="profile-link" style="display: none;">Perfil</a></li>
+            <li><a href="#" id="logout-link" style="display: none;">Sair</a></li>
+        </ul>
+    </nav>
+</header>
+
+<!-- Main Content -->
+<main>
+    <!-- Home Section -->
+    <section id="home-section">
+        <h2>Bem-vindo ao Online Game Centre</h2>
+        <p>Explore os jogos e divirta-se com a nossa comunidade!</p>
+        <!-- Campo de busca na galeria -->
+        <input type="text" id="search-bar" placeholder="Buscar jogos...">
+        <div id="game-list" class="game-grid">
+            <!-- Exemplo de jogo -->
+            <article class="game-card" data-game-code="">
+                <img src="https://via.placeholder.com/200x120?text=Logo" alt="Logo do Jogo">
+                <h3>Jogo Exemplo</h3>
+                <p>Categoria: Ação</p>
+            </article>
+        </div>
+        <!-- Seção extra com listas na página principal -->
+        <div class="extra-info">
+            <div id="recent-games">
+                <h3>Histórico dos Últimos Jogos Jogados</h3>
+                <p>Sem histórico disponível.</p>
+            </div>
+            <div id="famous-today">
+                <h3>Mais Famosos de Hoje</h3>
+                <p>Sem dados disponíveis.</p>
+            </div>
+            <div id="all-time">
+                <h3>Mais Jogados de Todos os Tempos</h3>
+                <p>Sem dados disponíveis.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Create Section -->
+    <section id="create-section" class="hidden">
+        <h2 id="create-section-title">Criar Jogo</h2>
+        <div class="editor-container">
+            <div class="editor-tabs">
+                <button class="tab" data-target="html-editor">HTML</button>
+                <button class="tab" data-target="css-editor">CSS</button>
+                <button class="tab" data-target="js-editor">JS</button>
+            </div>
+            <div class="editor-panels">
+                <textarea id="html-editor" class="editor" placeholder="Digite o HTML aqui..."></textarea>
+                <textarea id="css-editor" class="editor hidden" placeholder="Digite o CSS aqui..."></textarea>
+                <textarea id="js-editor" class="editor hidden" placeholder="Digite o JavaScript aqui..."></textarea>
+            </div>
+            <div class="preview-container">
+                <h3>Preview em Tempo Real</h3>
+                <iframe id="preview-iframe"></iframe>
+            </div>
+            <div class="debug-console">
+                <h3>Console de Depuração</h3>
+                <div id="console-output"></div>
+            </div>
+        </div>
+        <div class="game-info-form">
+            <h3>Informações do Jogo</h3>
+            <form id="game-info-form">
+                <input type="text" id="game-name" placeholder="Nome do Jogo" required>
+                <select id="game-category" required>
+                    <option value="">Selecione a Categoria</option>
+                    <option value="acao">Ação</option>
+                    <option value="puzzle">Puzzle</option>
+                    <option value="aventura">Aventura</option>
+                </select>
+                <!-- Campo para upload de logo -->
+                <input type="file" id="game-logo" accept="image/*">
+                <button type="submit" id="submit-game-btn">Publicar Jogo</button>
+            </form>
+        </div>
+    </section>
+
+    <!-- Profile Section -->
+    <section id="profile-section" class="hidden">
+        <h2>Perfil do Usuário</h2>
+        <div class="profile-info">
+            <p>Nome: <span id="profile-name">Usuário</span></p>
+            <p>Email: <span id="profile-email">usuario@example.com</span></p>
+            <p>Ranking: <span id="profile-ranking">1</span></p>
+        </div>
+        <div class="user-games">
+            <h3>Seus Jogos</h3>
+            <div id="user-game-list" class="game-grid">
+                <!-- Jogos do usuário -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Gallery Section -->
+    <section id="gallery-section" class="hidden">
+        <h2>Galeria de Jogos</h2>
+        <div class="filter-options">
+            <button class="filter-btn" data-filter="todos">Todos</button>
+            <button class="filter-btn" data-filter="acao">Ação</button>
+            <button class="filter-btn" data-filter="puzzle">Puzzle</button>
+            <button class="filter-btn" data-filter="aventura">Aventura</button>
+        </div>
+        <div id="gallery-game-list" class="game-grid">
+            <!-- Jogos publicados serão renderizados aqui -->
+        </div>
+    </section>
+</main>
+
+<!-- Footer -->
+<footer>
+    <p>&copy; 2025 Online Game Centre. Todos os direitos reservados.</p>
+</footer>
+
+<script>
+    /***********************
+     * Variáveis Globais *
+     ***********************/
+    let isLoggedIn = false;
+    let currentUser = null;
+    let uploadedLogo = ""; // Data URL do logo
+    let editingGameId = null; // Se nulo, cria novo; se não, atualiza o jogo
+
+    // Gerenciamento global de jogos
+    function getGlobalGames() {
+        return JSON.parse(localStorage.getItem("globalGames")) || [];
+    }
+    function saveGlobalGames(games) {
+        localStorage.setItem("globalGames", JSON.stringify(games));
+    }
+    function renderGlobalGallery() {
+        const games = getGlobalGames();
+        const gallery = document.getElementById("gallery-game-list");
+        gallery.innerHTML = "";
+        games.forEach(game => {
+            const card = createGameCard(game);
+            gallery.appendChild(card);
+        });
+    }
+    function renderProfileGames() {
+        const games = getGlobalGames();
+        const profileList = document.getElementById("user-game-list");
+        profileList.innerHTML = "";
+        games.filter(game => game.creator === currentUser).forEach(game => {
+            const card = createGameCard(game, true);
+            profileList.appendChild(card);
+        });
+    }
+    function createGameCard(game, isProfile = false) {
+        const card = document.createElement("article");
+        card.classList.add("game-card");
+        card.setAttribute("data-game-id", game.id);
+        card.setAttribute("data-game-code", game.code);
+        card.innerHTML = `
+        <img src="${game.logo}" alt="Logo do Jogo">
+        <h3>${game.name}</h3>
+        <p>Categoria: ${game.category}</p>
+      `;
+        addGameCardClickListener(card);
+        if(isLoggedIn && game.creator === currentUser) {
+            const editBtn = document.createElement("button");
+            editBtn.innerText = "Editar";
+            editBtn.classList.add("edit-btn");
+            editBtn.addEventListener("click", function(e) {
+                e.stopPropagation();
+                loadGameForEdit(game.id);
+            });
+            card.appendChild(editBtn);
+        }
+        return card;
+    }
+
+    /***********************
+     * Função para Hash de Senha (SHA-256) *
+     ***********************/
+    async function hashPassword(password) {
+        const encoder = new TextEncoder();
+        const data = encoder.encode(password);
+        const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const hashHex = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+        return hashHex;
+    }
+
+    /***********************
+     * Persistência de Login *
+     ***********************/
+    function checkPersistentLogin() {
+        const storedUser = localStorage.getItem("currentUser");
+        if(storedUser) {
+            currentUser = storedUser;
+            isLoggedIn = true;
+            afterLogin();
+        }
+    }
+
+    /***********************
+     * Modal: Login / Cadastro *
+     ***********************/
+    const loginContainer = document.getElementById("login-container");
+    const signupContainer = document.getElementById("signup-container");
+    const showSignupBtn = document.getElementById("show-signup-btn");
+    const showLoginBtn = document.getElementById("show-login-btn");
+
+    showSignupBtn.addEventListener("click", () => {
+        loginContainer.classList.add("hidden");
+        signupContainer.classList.remove("hidden");
+    });
+    if (showLoginBtn) {
+        showLoginBtn.addEventListener("click", () => {
+            signupContainer.classList.add("hidden");
+            loginContainer.classList.remove("hidden");
+        });
+    }
+
+    /***********************
+     * Cadastro e Login Avançado *
+     ***********************/
+    function getUsers() {
+        return JSON.parse(localStorage.getItem("users")) || {};
+    }
+    function saveUsers(users) {
+        localStorage.setItem("users", JSON.stringify(users));
+    }
+    document.getElementById("signup-form").addEventListener("submit", async e => {
+        e.preventDefault();
+        const username = document.getElementById("signup-username").value.trim();
+        const password = document.getElementById("signup-password").value;
+        const password2 = document.getElementById("signup-password2").value;
+        if(password !== password2) {
+            alert("As senhas não coincidem.");
+            return;
+        }
+        const users = getUsers();
+        if(users[username]) {
+            alert("Nome de usuário já existe. Escolha outro.");
+            return;
+        }
+        const hashedPassword = await hashPassword(password);
+        users[username] = { password: hashedPassword, games: [] };
+        saveUsers(users);
+        alert("Conta criada com sucesso!");
+        currentUser = username;
+        isLoggedIn = true;
+        localStorage.setItem("currentUser", username);
+        afterLogin();
+    });
+    document.getElementById("login-form").addEventListener("submit", async e => {
+        e.preventDefault();
+        const username = document.getElementById("login-username").value.trim();
+        const password = document.getElementById("login-password").value;
+        const users = getUsers();
+        if(users[username]) {
+            const hashedPassword = await hashPassword(password);
+            if(users[username].password === hashedPassword) {
+                currentUser = username;
+                isLoggedIn = true;
+                if(document.getElementById("remember-me").checked){
+                    localStorage.setItem("currentUser", username);
+                }
+                afterLogin();
+                return;
+            }
+        }
+        alert("Credenciais inválidas. Por favor, verifique seu usuário e senha.");
+    });
+    document.getElementById("guest-btn-login").addEventListener("click", () => {
+        isLoggedIn = false;
+        currentUser = null;
+        localStorage.removeItem("currentUser");
+        afterLogin();
+    });
+    function afterLogin() {
+        document.getElementById("login-modal").style.display = "none";
+        document.getElementById("create-link").style.display = isLoggedIn ? "block" : "none";
+        document.getElementById("profile-link").style.display = isLoggedIn ? "block" : "none";
+        document.getElementById("logout-link").style.display = isLoggedIn ? "block" : "none";
+        if(isLoggedIn) {
+            document.getElementById("profile-name").innerText = currentUser;
+        }
+        showSection(homeSection);
+        renderGlobalGallery();
+        if(isLoggedIn) renderProfileGames();
+    }
+
+    /***********************
+     * Navegação entre Seções *
+     ***********************/
+    const homeLink = document.getElementById("home-link");
+    const galleryLink = document.getElementById("gallery-link");
+    const createLink = document.getElementById("create-link");
+    const profileLink = document.getElementById("profile-link");
+    const logoutLink = document.getElementById("logout-link");
+
+    const homeSection = document.getElementById("home-section");
+    const createSection = document.getElementById("create-section");
+    const profileSection = document.getElementById("profile-section");
+    const gallerySection = document.getElementById("gallery-section");
+
+    function showSection(section) {
+        [homeSection, createSection, profileSection, gallerySection].forEach(sec => {
+            sec.classList.add("hidden");
+        });
+        section.classList.remove("hidden");
+    }
+    homeLink.addEventListener("click", e => { e.preventDefault(); showSection(homeSection); });
+    galleryLink.addEventListener("click", e => { e.preventDefault(); showSection(gallerySection); });
+    createLink.addEventListener("click", e => { e.preventDefault(); showSection(createSection); updatePreview(); });
+    profileLink.addEventListener("click", e => { e.preventDefault(); showSection(profileSection); });
+    logoutLink.addEventListener("click", e => {
+        e.preventDefault();
+        isLoggedIn = false;
+        currentUser = null;
+        localStorage.removeItem("currentUser");
+        document.getElementById("login-modal").style.display = "flex";
+        createLink.style.display = "none";
+        profileLink.style.display = "none";
+        logoutLink.style.display = "none";
+        showSection(homeSection);
+    });
+
+    /**************************
+     * Editor de Código e Preview *
+     **************************/
+    const tabs = document.querySelectorAll(".tab");
+    tabs.forEach(tab => {
+        tab.addEventListener("click", () => {
+            document.querySelectorAll(".editor").forEach(editor => {
+                editor.classList.add("hidden");
+            });
+            const target = tab.getAttribute("data-target");
+            document.getElementById(target).classList.remove("hidden");
+        });
+    });
+    function updatePreview() {
+        const htmlContent = document.getElementById("html-editor").value;
+        const cssContent = "<style>" + document.getElementById("css-editor").value + "</style>";
+        const jsContent = document.getElementById("js-editor").value;
+        const previewFrame = document.getElementById("preview-iframe");
+        const previewDocument = previewFrame.contentDocument || previewFrame.contentWindow.document;
+        previewDocument.open();
+        previewDocument.write(htmlContent + cssContent + "<script>" + jsContent + "<\/script>");
+        previewDocument.close();
+    }
+    document.querySelectorAll(".editor").forEach(editor => {
+        editor.addEventListener("input", () => {
+            setTimeout(updatePreview, 300);
+        });
+    });
+
+    /**********************************
+     * Processamento do Upload do Logo *
+     **********************************/
+    document.getElementById("game-logo").addEventListener("change", function(){
+        const file = this.files[0];
+        if(file){
+            const reader = new FileReader();
+            reader.onload = function(e){
+                uploadedLogo = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    /**********************************
+     * Publicação e Edição de Jogos *
+     **********************************/
+    document.getElementById("game-info-form").addEventListener("submit", e => {
+        e.preventDefault();
+        const gameName = document.getElementById("game-name").value;
+        const gameCategory = document.getElementById("game-category").value;
+        const gameHTML = document.getElementById("html-editor").value;
+        const gameCSS = document.getElementById("css-editor").value;
+        const gameJS = document.getElementById("js-editor").value;
+        const gameCode = gameHTML + "<style>" + gameCSS + "</style>" + "<script>" + gameJS + "<\/script>";
+        const logoURL = uploadedLogo || "https://via.placeholder.com/200x120?text=Logo";
+
+        let games = getGlobalGames();
+        if(editingGameId) {
+            games = games.map(game => {
+                if(game.id === editingGameId) {
+                    return { ...game, name: gameName, category: gameCategory, code: gameCode, logo: logoURL };
+                }
+                return game;
+            });
+            alert("Jogo atualizado com sucesso!");
+        } else {
+            const newGame = {
+                id: Date.now(),
+                name: gameName,
+                category: gameCategory,
+                code: gameCode,
+                logo: logoURL,
+                creator: isLoggedIn ? currentUser : "guest"
+            };
+            games.push(newGame);
+            alert("Jogo publicado com sucesso!");
+        }
+        saveGlobalGames(games);
+        document.getElementById("game-logo").value = "";
+        uploadedLogo = "";
+        editingGameId = null;
+        document.getElementById("submit-game-btn").innerText = "Publicar Jogo";
+        document.getElementById("create-section-title").innerText = "Criar Jogo";
+        document.getElementById("game-info-form").reset();
+        document.getElementById("html-editor").value = "";
+        document.getElementById("css-editor").value = "";
+        document.getElementById("js-editor").value = "";
+        updatePreview();
+        renderGlobalGallery();
+        if(isLoggedIn) renderProfileGames();
+        showSection(gallerySection);
+    });
+
+    function loadGameForEdit(gameId) {
+        const games = getGlobalGames();
+        const game = games.find(g => g.id === gameId);
+        if(game && isLoggedIn && game.creator === currentUser) {
+            editingGameId = gameId;
+            document.getElementById("game-name").value = game.name;
+            document.getElementById("game-category").value = game.category;
+            document.getElementById("html-editor").value = game.code;
+            document.getElementById("css-editor").value = "";
+            document.getElementById("js-editor").value = "";
+            updatePreview();
+            document.getElementById("submit-game-btn").innerText = "Atualizar Jogo";
+            document.getElementById("create-section-title").innerText = "Editar Jogo";
+            showSection(createSection);
+        } else {
+            alert("Você não tem permissão para editar este jogo.");
+        }
+    }
+
+    /******************
+     * Abertura do Jogo em Nova Aba *
+     ******************/
+    function addGameCardClickListener(card) {
+        card.addEventListener("click", () => {
+            const gameName = card.querySelector("h3") ? card.querySelector("h3").innerText : "Jogo";
+            const gameCode = card.getAttribute("data-game-code") || card.innerHTML;
+            const newWindow = window.open("", gameName, "width=800,height=600");
+            newWindow.document.write(`
+          <!DOCTYPE html>
+          <html lang="pt">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>${gameName}</title>
+            <style>
+              body, html { margin: 0; padding: 0; height: 100%; font-family: Arial, sans-serif; }
+              #game-container { width: 100%; height: 100%; }
+              #fullscreen-btn {
+                position: fixed;
+                top: 10px;
+                right: 10px;
+                padding: 10px;
+                background: #4a90e2;
+                color: #fff;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                z-index: 9999;
+              }
+            </style>
+          </head>
+          <body>
+            <button id="fullscreen-btn">Tela Cheia</button>
+            <div id="game-container"></div>
+            <script>
+              (function(){
+                document.getElementById("game-container").innerHTML = \`${gameCode}\`;
+                document.getElementById("fullscreen-btn").addEventListener("click", function() {
+                  var elem = document.getElementById("game-container");
+                  if (elem.requestFullscreen) {
+                    elem.requestFullscreen();
+                  } else if (elem.webkitRequestFullscreen) {
+                    elem.webkitRequestFullscreen();
+                  } else if (elem.msRequestFullscreen) {
+                    elem.msRequestFullscreen();
+                  }
+                });
+              })();
+            <\/script>
+          </body>
+          </html>
+        `);
+            newWindow.document.close();
+        });
+    }
+
+    /******************
+     * Filtros da Galeria e Busca *
+     ******************/
+    const filterButtons = document.querySelectorAll(".filter-btn");
+    filterButtons.forEach(button => {
+        button.addEventListener("click", () => {
+            const filter = button.getAttribute("data-filter");
+            const cards = document.querySelectorAll("#gallery-game-list .game-card");
+            cards.forEach(card => {
+                if(filter === "todos") {
+                    card.style.display = "block";
+                } else {
+                    card.style.display = card.innerHTML.toLowerCase().includes(filter) ? "block" : "none";
+                }
+            });
+        });
+    });
+    document.getElementById("search-bar").addEventListener("input", function(){
+        const query = this.value.toLowerCase();
+        const cards = document.querySelectorAll("#gallery-game-list .game-card");
+        cards.forEach(card => {
+            const title = card.querySelector("h3").innerText.toLowerCase();
+            card.style.display = title.includes(query) ? "block" : "none";
+        });
+    });
+
+    window.onload = () => {
+        checkPersistentLogin();
+        renderGlobalGallery();
+    };
+</script>
+</body>
+</html>
