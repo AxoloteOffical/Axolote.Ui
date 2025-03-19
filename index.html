@@ -108,6 +108,27 @@
             font-size: 0.8rem;
             z-index: 2;
         }
+        /* Ações: Curtir e Favoritar */
+        .game-actions {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 0.5rem;
+        }
+        .game-actions button {
+            padding: 0.3rem 0.6rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .like-btn {
+            background-color: #e74c3c;
+            color: #fff;
+        }
+        .fav-btn {
+            background-color: #f1c40f;
+            color: #fff;
+        }
         /* Campo de busca na galeria */
         #search-bar {
             margin-bottom: 1rem;
@@ -245,12 +266,7 @@
         <!-- Campo de busca na galeria -->
         <input type="text" id="search-bar" placeholder="Buscar jogos...">
         <div id="game-list" class="game-grid">
-            <!-- Exemplo de jogo -->
-            <article class="game-card" data-game-code="">
-                <img src="https://via.placeholder.com/200x120?text=Logo" alt="Logo do Jogo">
-                <h3>Jogo Exemplo</h3>
-                <p>Categoria: Ação</p>
-            </article>
+            <!-- Jogos serão renderizados aqui -->
         </div>
         <!-- Seção extra com listas na página principal -->
         <div class="extra-info">
@@ -361,7 +377,17 @@
     function saveGlobalGames(games) {
         localStorage.setItem("globalGames", JSON.stringify(games));
     }
-    function renderGlobalGallery() {
+    // Funções para renderizar jogos nas seções Home e Galeria
+    function renderHomeGames() {
+        const games = getGlobalGames();
+        const homeList = document.getElementById("game-list");
+        homeList.innerHTML = "";
+        games.forEach(game => {
+            const card = createGameCard(game);
+            homeList.appendChild(card);
+        });
+    }
+    function renderGalleryGames() {
         const games = getGlobalGames();
         const gallery = document.getElementById("gallery-game-list");
         gallery.innerHTML = "";
@@ -369,6 +395,11 @@
             const card = createGameCard(game);
             gallery.appendChild(card);
         });
+    }
+    function renderGlobalGallery() {
+        // Atualiza ambas as seções
+        renderHomeGames();
+        renderGalleryGames();
     }
     function renderProfileGames() {
         const games = getGlobalGames();
@@ -379,7 +410,23 @@
             profileList.appendChild(card);
         });
     }
+
+    // Função para atualizar jogo na lista global
+    function updateGameInGlobal(updatedGame) {
+        let games = getGlobalGames();
+        games = games.map(g => g.id === updatedGame.id ? updatedGame : g);
+        saveGlobalGames(games);
+        renderHomeGames();
+        renderGalleryGames();
+        if(isLoggedIn) renderProfileGames();
+    }
+
+    // Criação dos cards de jogo com sistema de Curtir e Favoritar
     function createGameCard(game, isProfile = false) {
+        // Garantir propriedades de curtidas e favoritos
+        game.likedBy = game.likedBy || [];
+        game.favorites = game.favorites || [];
+
         const card = document.createElement("article");
         card.classList.add("game-card");
         card.setAttribute("data-game-id", game.id);
@@ -400,6 +447,52 @@
             });
             card.appendChild(editBtn);
         }
+        // Botões de Curtir e Favoritar
+        const actionsDiv = document.createElement("div");
+        actionsDiv.classList.add("game-actions");
+        const likeBtn = document.createElement("button");
+        likeBtn.innerText = `Curtir (${game.likedBy.length})`;
+        likeBtn.classList.add("like-btn");
+        const favBtn = document.createElement("button");
+        favBtn.innerText = (isLoggedIn && game.favorites.includes(currentUser)) ? "Favorito" : "Favoritar";
+        favBtn.classList.add("fav-btn");
+        actionsDiv.appendChild(likeBtn);
+        actionsDiv.appendChild(favBtn);
+        card.appendChild(actionsDiv);
+
+        // Evento para Curtir
+        likeBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            if(!isLoggedIn) {
+                alert("Faça login para curtir o jogo.");
+                return;
+            }
+            if(!game.likedBy.includes(currentUser)) {
+                game.likedBy.push(currentUser);
+            } else {
+                // Descurtir se já tiver curtido
+                game.likedBy = game.likedBy.filter(user => user !== currentUser);
+            }
+            likeBtn.innerText = `Curtir (${game.likedBy.length})`;
+            updateGameInGlobal(game);
+        });
+        // Evento para Favoritar
+        favBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            if(!isLoggedIn) {
+                alert("Faça login para favoritar o jogo.");
+                return;
+            }
+            if(!game.favorites.includes(currentUser)) {
+                game.favorites.push(currentUser);
+                favBtn.innerText = "Favorito";
+            } else {
+                game.favorites = game.favorites.filter(user => user !== currentUser);
+                favBtn.innerText = "Favoritar";
+            }
+            updateGameInGlobal(game);
+        });
+
         return card;
     }
 
@@ -624,7 +717,10 @@
                 category: gameCategory,
                 code: gameCode,
                 logo: logoURL,
-                creator: isLoggedIn ? currentUser : "guest"
+                creator: isLoggedIn ? currentUser : "guest",
+                likes: 0,
+                likedBy: [],
+                favorites: []
             };
             games.push(newGame);
             alert("Jogo publicado com sucesso!");
